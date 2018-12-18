@@ -1,18 +1,20 @@
+import json
 import pickle
 
+import numpy as np
 from keras.callbacks import ModelCheckpoint
+from keras.layers import Dense, Conv1D, Dropout
+from keras.layers import GlobalMaxPooling1D
+from keras.layers import Input, Embedding
+from keras.models import Model
 from keras.optimizers import Adam
+from keras.preprocessing.sequence import pad_sequences
+from keras.preprocessing.text import Tokenizer
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import normalize
 from tqdm import tqdm
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+
 from utils.utils import binarize
-import numpy as np
-from keras.layers import Input, Embedding
-from keras.layers import Dense, Conv1D, Dropout
-from keras.layers import GlobalMaxPooling1D
-from keras.models import Model
 
 EMBEDDING_FILE = 'H:\short_text_cluster\data\merge_sgns_bigram_char300.txt'
 
@@ -26,6 +28,7 @@ for sen in sens:
     for word in sen:
         line.extend([char for char in word])
     data.append(line)
+data = data[0:1000]
 
 print("Total: %s short texts" % format(len(data), ","))
 
@@ -55,7 +58,7 @@ EMBEDDING_DIM = 300
 nb_words = min(MAX_NB_WORDS, len(word_index)) + 1
 embedding_matrix = np.zeros((nb_words, EMBEDDING_DIM))
 word2vec = {}
-topn = 100000
+topn = 1000
 lines_num = 0
 with open(EMBEDDING_FILE, encoding='utf-8', errors='ignore') as f:
     first_line = True
@@ -79,7 +82,7 @@ for word, i in word_index.items():
         except:
             pass
 print('Null word embeddings: %d' % np.sum(np.sum(embedding_matrix, axis=1) == 0))
-pickle.dump(embedding_matrix, open("embedding", "wb"))
+pickle.dump(embedding_matrix, open("embedding.npy", "wb"))
 
 #################################################
 # Preparing target using Average embeddings (AE)
@@ -147,7 +150,7 @@ def get_model():
 
 
 if __name__ == '__main__':
-    nb_epoch = 50
+    nb_epoch = 1
     checkpoint = ModelCheckpoint('models/weights.{epoch:03d}-{val_acc:.4f}.hdf5', monitor='val_acc', verbose=1,
                                  save_best_only=True, mode='auto')
     model = get_model()
@@ -165,14 +168,23 @@ if __name__ == '__main__':
 
     # true_labels = y
     # n_clusters = len(np.unique(y))
-    n_clusters = 2000
+    n_clusters = 20
     print("Number of classes: %d" % n_clusters)
-    km = KMeans(n_clusters=n_clusters, n_jobs=10)
+    km = KMeans(n_clusters=n_clusters, n_jobs=1)
     result = dict()
     V = normalize(H, norm='l2')
     km.fit(V)
     pred = km.labels_
     print(pred)
     # a = {'deep': cluster_quality(true_labels, pred)}
-    np.save("pred.npy", pred)
-    model.save_weights("model.plk")
+    with open("result.json", "w") as f:
+        class_dict = {}
+        for index, class_num in enumerate(pred):
+            class_sens = class_dict.get(class_num, [])
+            class_sen = "".join(data[index])
+            class_sens.append(class_sen)
+            class_dict[class_num] = class_sens
+        for key, value in class_dict.items():
+            f.writelines(json.dumps({str(key): value}, ensure_ascii=False) + "\n")
+        np.save("pred.npy", pred)
+        model.save_weights("model.plk")
