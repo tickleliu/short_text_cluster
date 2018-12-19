@@ -4,8 +4,9 @@ from gensim.models.keyedvectors import KeyedVectors
 from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam
 from utils.utils import cluster_quality
-
 EMBEDDING_FILE = 'data/GoogleNews-vectors-negative300.bin'
+
+
 
 text_path = 'data/StackOverflow.txt'
 label_path = 'data/StackOverflow_gnd.txt'
@@ -39,6 +40,7 @@ MAX_SEQUENCE_LENGTH = max(seq_lens)
 X = pad_sequences(sequences_full, maxlen=MAX_SEQUENCE_LENGTH)
 y = target
 
+
 ############################
 # Preparing embedding matrix
 ############################
@@ -54,10 +56,7 @@ for word, i in word_index.items():
     if word in word2vec.vocab:
         embedding_matrix[i] = word2vec.word_vec(word)
     else:
-        try:
-            print(word)
-        except:
-            pass
+        print(word)
 print('Null word embeddings: %d' % np.sum(np.sum(embedding_matrix, axis=1) == 0))
 
 #################################################
@@ -66,14 +65,13 @@ print('Null word embeddings: %d' % np.sum(np.sum(embedding_matrix, axis=1) == 0)
 Y = {}
 tfidf = tokenizer.sequences_to_matrix(sequences_full, mode='tfidf')
 denom = 1 + np.sum(tfidf, axis=1)[:, None]
-normed_tfidf = tfidf / denom
+normed_tfidf = tfidf/denom
 average_embeddings = np.dot(normed_tfidf, embedding_matrix)
 Y["ae"] = average_embeddings
 print("Shape of average embedding: ", Y['ae'].shape)
 
 # binary Y
 from utils.utils import binarize
-
 reduction_name = "ae"
 B = binarize(Y[reduction_name])
 
@@ -83,6 +81,7 @@ TARGET_DIM = B.shape[1]
 # Example of binarized target vector
 print(B.shape)
 print(B[0])
+
 
 ################################################
 # train model
@@ -118,7 +117,7 @@ def get_model():
     predictions = Dense(TARGET_DIM, activation='sigmoid')(x)
     model = Model(sequence_input, predictions)
 
-    model.layers[1].trainable = trainable_embedding
+    model.layers[1].trainable=trainable_embedding
 
     adam = Adam(lr=1e-3, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
     # Loss and Optimizer
@@ -129,11 +128,9 @@ def get_model():
     model.summary()
     return model
 
-
 if __name__ == '__main__':
     nb_epoch = 50
-    checkpoint = ModelCheckpoint('models/weights.{epoch:03d}-{val_acc:.4f}.hdf5', monitor='val_acc', verbose=1,
-                                 save_best_only=True, mode='auto')
+    checkpoint = ModelCheckpoint('models/weights.{epoch:03d}-{val_acc:.4f}.hdf5', monitor='val_acc', verbose=1, save_best_only=True, mode='auto')
     model = get_model()
     model.fit(X, B, validation_split=0.2,
               epochs=nb_epoch, batch_size=100, verbose=1, shuffle=True)
@@ -146,6 +143,7 @@ if __name__ == '__main__':
     # inference of penultimate layer
     H = model_penultimate.predict(X)
     print("Sample shape: {}".format(H.shape))
+
 
     from sklearn.preprocessing import normalize
     from sklearn.cluster import KMeans

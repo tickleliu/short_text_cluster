@@ -2,4 +2,7 @@
 *.txt
 *.pyc
 *.bin
+*.json
+*.pkl
 /.idea
+/temp

@@ -13,11 +13,11 @@ from keras.preprocessing.text import Tokenizer
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import normalize
 from tqdm import tqdm
+from utils.reduce_function import *
 
 from utils.utils import binarize
 
-EMBEDDING_FILE = 'H:\short_text_cluster\data\merge_sgns_bigram_char300.txt'
-
+EMBEDDING_FILE = 'data/word_embedding.txt'
 text_path = 'data/sens.npy'
 
 with open(text_path, "rb") as f:
@@ -27,8 +27,9 @@ for sen in sens:
     line = []
     for word in sen:
         line.extend([char for char in word])
+    line = " ".join(line)
     data.append(line)
-data = data[0:1000]
+# data = data[0:1000]
 
 print("Total: %s short texts" % format(len(data), ","))
 
@@ -58,7 +59,8 @@ EMBEDDING_DIM = 300
 nb_words = min(MAX_NB_WORDS, len(word_index)) + 1
 embedding_matrix = np.zeros((nb_words, EMBEDDING_DIM))
 word2vec = {}
-topn = 1000
+
+topn = 100000
 lines_num = 0
 with open(EMBEDDING_FILE, encoding='utf-8', errors='ignore') as f:
     first_line = True
@@ -82,7 +84,6 @@ for word, i in word_index.items():
         except:
             pass
 print('Null word embeddings: %d' % np.sum(np.sum(embedding_matrix, axis=1) == 0))
-pickle.dump(embedding_matrix, open("embedding.npy", "wb"))
 
 #################################################
 # Preparing target using Average embeddings (AE)
@@ -91,12 +92,24 @@ Y = {}
 tfidf = tokenizer.sequences_to_matrix(sequences_full, mode='tfidf')
 denom = 1 + np.sum(tfidf, axis=1)[:, None]
 normed_tfidf = tfidf / denom
-average_embeddings = np.dot(normed_tfidf, embedding_matrix)
+
+# save temp file
+pickle.dump(embedding_matrix, open("temp/embedding.npy", "wb"))
+pickle.dump(normed_tfidf, open("temp/features.npy", "wb"))
+
+embedding_matrix = pickle.load(open("temp/embedding.npy", "rb"))
+normed_tfidf = pickle.load(open("temp/features.npy", "rb"))
+
+# average_embeddings = np.dot(normed_tfidf, embedding_matrix)
+average_embeddings = ae(normed_tfidf, embedding_matrix)
 Y["ae"] = average_embeddings
 print("Shape of average embedding: ", Y['ae'].shape)
+#
+Y["lle"] = lle(normed_tfidf, 300)
 
 # binary Y
 reduction_name = "ae"
+reduction_name = "lle"
 B = binarize(Y[reduction_name])
 
 # Last dimension in the CNN
@@ -110,7 +123,6 @@ print(B[0])
 ################################################
 # train model
 ################################################
-
 
 
 def get_model():
@@ -168,9 +180,9 @@ if __name__ == '__main__':
 
     # true_labels = y
     # n_clusters = len(np.unique(y))
-    n_clusters = 20
+    n_clusters = 1000
     print("Number of classes: %d" % n_clusters)
-    km = KMeans(n_clusters=n_clusters, n_jobs=1)
+    km = KMeans(n_clusters=n_clusters, n_jobs=10)
     result = dict()
     V = normalize(H, norm='l2')
     km.fit(V)
@@ -181,10 +193,11 @@ if __name__ == '__main__':
         class_dict = {}
         for index, class_num in enumerate(pred):
             class_sens = class_dict.get(class_num, [])
-            class_sen = "".join(data[index])
+            class_sen = data[index]  # type:str
+            class_sen = class_sen.replace(" ", "")
             class_sens.append(class_sen)
             class_dict[class_num] = class_sens
         for key, value in class_dict.items():
             f.writelines(json.dumps({str(key): value}, ensure_ascii=False) + "\n")
-        np.save("pred.npy", pred)
-        model.save_weights("model.plk")
+        np.save("temp/pred.npy", pred)
+        model.save_weights("temp/model.plk")
