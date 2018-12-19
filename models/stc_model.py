@@ -71,7 +71,7 @@ class KMeanModel(object):
 
     def __init__(self, config):
         self.config = config
-        self.km = KMeans(n_clusters=config.n_clusters, n_jobs=10)
+        self.km = KMeans(n_clusters=config.n_clusters, n_jobs=config.cpu_num)
 
     def fit(self, features):
         V = normalize(features, norm="l2")

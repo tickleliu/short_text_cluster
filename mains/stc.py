@@ -4,19 +4,18 @@
 @file: stc.py
 @time: 2018/11/30
 """
-import tensorflow as tf
+import json
 
+import numpy as np
+import tensorflow as tf
 from tqdm import tqdm
+
 from data_loader.char_sen_generator import CharSenGenerator
 from models.stc_model import StcModel, KMeanModel
-import json
 from trainers.stc_trainer import StcTrainer
-from utils.config import process_config
 from utils.dirs import create_dirs
 from utils.logger import Logger
-from utils.utils import get_args
-import numpy as np
-
+from sklearn.preprocessing import normalize
 
 def main():
     # capture the config path from the run arguments
@@ -29,14 +28,15 @@ def main():
         tf.app.flags.DEFINE_integer("emb_dim", 300, "word embedding dimension")
         tf.app.flags.DEFINE_integer("target_dim", 300, "word embedding dimension")
         tf.app.flags.DEFINE_string("exp_name", "example", "exp name")
-        tf.app.flags.DEFINE_integer("num_epochs", 1, "epochs")
+        tf.app.flags.DEFINE_integer("num_epochs", 10, "epochs")
         tf.app.flags.DEFINE_integer("num_iter_per_epoch", 200, "iter")
         tf.app.flags.DEFINE_float("learning_rate", 0.001, "lr")
         tf.app.flags.DEFINE_integer("batch_size", 100, "batch size")
         tf.app.flags.DEFINE_integer("max_to_keep", 5, "model to keep")
+        tf.app.flags.DEFINE_integer("cpu_num", 1, "cpu num")
         tf.app.flags.DEFINE_string("summary_dir", "../temp", "summary dir")
         tf.app.flags.DEFINE_string("checkpoint_dir", "../temp", "check point dir")
-        tf.app.flags.DEFINE_integer("n_clusters", 1000, "cluster nums")
+        tf.app.flags.DEFINE_integer("n_clusters", 100, "cluster nums")
         tf.app.flags.DEFINE_string("reduce_func", "ae", "reduce function")
         config = tf.app.flags.FLAGS
     except Exception as e:
@@ -60,24 +60,28 @@ def main():
     # load model if exists
     model.load(sess)
     # here you train your model
-    # trainer.train()
+    trainer.train()
 
-    size, len = data.input.shape
-    result = []
-    for i in tqdm(range(size), total=size):
-        sen = data.data[i]
-        p = trainer.inference(sen)
-        p = p[0]
-        result.append(p)
+    size, _ = data.input.shape
 
-    # V = np.asarray(result, dtype=np.float32)
-    V = np.concatenate(tuple(result))
+    use_mode = "model"
+    if use_mode == "model":
+        result = []
+        for i in tqdm(range(size), total=size):
+            sen = data.data[i]
+            p = trainer.inference(sen)
+            p = p[0]
+            result.append(p)
+        V = np.concatenate(tuple(result))
+    else:
+        V = data.y[use_mode]
+    V = normalize(V, norm='l2')
     km = KMeanModel(config)
     print("cluster %s text to %s clusters" % (size, config.n_clusters))
     km.fit(V)
     print("predict text into clusters")
     pred = km.predict(V)
-    with open("result.json", "w") as f:
+    with open("%s.json" % use_mode, "w") as f:
         class_dict = {}
         for index, class_num in enumerate(pred):
             class_sens = class_dict.get(class_num, [])

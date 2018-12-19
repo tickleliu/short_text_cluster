@@ -18,10 +18,10 @@ from utils.reduce_function import *
 from utils.utils import binarize
 
 
-class CharSenGenerator(DataGenerator):
+class StackGenerator(DataGenerator):
 
     def __init__(self, config):
-        super(CharSenGenerator, self).__init__(config)
+        super(StackGenerator, self).__init__(config)
         self.config = config
         self.embedding_file = config.embedding_file
         self.text_path = config.text_path

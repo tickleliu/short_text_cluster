@@ -10,6 +10,8 @@ from typing import List
 
 __all__ = ["ae", "tsne", "lle", "ltsa", "le", "mds", "isomap"]
 
+cpu_num = 4
+
 
 def ae(features, embedding_matrix):
     average_embeddings = np.dot(features, embedding_matrix)
@@ -22,14 +24,14 @@ def pca(features: List[List], dim):
 
 def tsne(featrues: List[List], dim):
     featrues = np.asarray(featrues, dtype=np.float32)
-    Y = manifold.TSNE(n_components=dim, init="pca", random_state=0).fit_transform(
+    Y = manifold.TSNE(n_components=dim, init="pca", random_state=0, method="exact", verbose=2).fit_transform(
         featrues)
     return Y
 
 
 def isomap(featrues: List[List], dim):
     featrues = np.asarray(featrues, dtype=np.float32)
-    Y = manifold.Isomap(n_components=dim, n_neighbors=3, n_jobs=10).fit_transform(
+    Y = manifold.Isomap(n_components=dim, n_neighbors=3, n_jobs=cpu_num).fit_transform(
         featrues)
     return Y
 
@@ -37,21 +39,21 @@ def isomap(featrues: List[List], dim):
 def lle(featrues: List[List], dim, method="standard"):
     featrues = np.asarray(featrues, dtype=np.float32)
     Y = manifold.LocallyLinearEmbedding(n_neighbors=3, n_components=dim, method=method,
-                                        eigen_solver="auto", n_jobs=10).fit_transform(
+                                        eigen_solver="auto", n_jobs=cpu_num).fit_transform(
         featrues)
     return Y
 
 
 def mds(featrues: List[List], dim):
     featrues = np.asarray(featrues, dtype=np.float32)
-    Y = manifold.MDS(n_components=dim, max_iter=100, n_init=1, n_jobs=10).fit_transform(
+    Y = manifold.MDS(n_components=dim, max_iter=100, n_init=1, n_jobs=cpu_num).fit_transform(
         featrues)
     return Y
 
 
 def le(featrues: List[List], dim):
     featrues = np.asarray(featrues, dtype=np.float32)
-    Y = manifold.SpectralEmbedding(n_components=dim, n_jobs=10).fit_transform(
+    Y = manifold.SpectralEmbedding(n_components=dim, n_jobs=cpu_num).fit_transform(
         featrues)
     return Y
 
@@ -60,7 +62,7 @@ def ltsa(featrues: List[List], dim):
     method = "ltsa"
     featrues = np.asarray(featrues, dtype=np.float32)
     Y = manifold.LocallyLinearEmbedding(n_components=dim, method=method,
-                                        eigen_solver="auto", n_jobs=10).fit_transform(
+                                        eigen_solver="auto", n_jobs=cpu_num).fit_transform(
         featrues)
     return Y
 
