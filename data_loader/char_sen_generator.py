@@ -83,8 +83,8 @@ class CharSenGenerator(DataGenerator):
             pickle.dump(embedding_matrix, open("../temp/embedding.pkl", "wb"))
             print('Null word embeddings: %d' % np.sum(np.sum(embedding_matrix, axis=1) == 0))
 
-        if os.path.exists("../temp/features.pkl"):
-            Y = pickle.load(open("../temp/features.pkl", "rb"))
+        if os.path.exists("../temp/sen_features.pkl"):
+            Y = pickle.load(open("../temp/sen_features.pkl", "rb"))
         else:
             Y = {}
             tfidf = tokenizer.sequences_to_matrix(sequences_full, mode='tfidf')
@@ -93,16 +93,43 @@ class CharSenGenerator(DataGenerator):
             average_embeddings = ae(normed_tfidf, embedding_matrix)
             print("calc ae")
             Y["ae"] = binarize(average_embeddings)
+
+            # normed_tfidf = pca(normed_tfidf, 800)
             # print("calc lle")
-            # Y["lle"] = binarize(lle(normed_tfidf, config.emb_dim))
-            # print("calc tsne")
-            # Y["tsne"] = binarize(tsne(normed_tfidf, config.emb_dim))
+            # if os.path.exists("../temp/sen_lle.pkl"):
+            #     Y["lle"] = pickle.load(open("../temp/sen_lle.pkl", "rb"))
+            # else:
+            #     Y["lle"] = binarize(lle(normed_tfidf, 128))
+            #     pickle.dump(Y["lle"], open("../temp/sen_lle.pkl", "wb"))
+            #
             # print("calc isomap")
-            # Y["isomap"] = binarize(isomap(normed_tfidf, config.emb_dim))
+            # if os.path.exists("../temp/sen_isomap.pkl"):
+            #     Y["isomap"] = pickle.load(open("../temp/sen_isomap.pkl", "rb"))
+            # else:
+            #     Y["isomap"] = binarize(isomap(normed_tfidf, 128))
+            #     pickle.dump(Y["isomap"], open("../temp/sen_isomap.pkl", "wb"))
+            #
             # print("calc mds")
-            # Y["mds"] = binarize(mds(normed_tfidf, config.emb_dim))
+            # if os.path.exists("../temp/sen_mds.pkl"):
+            #     Y["mds"] = pickle.load(open("../temp/sen_mds.pkl", "rb"))
+            # else:
+            #     Y["mds"] = binarize(mds(normed_tfidf, 128))
+            #     pickle.dump(Y["mds"], open("../temp/sen_mds.pkl", "wb"))
+            #
             # print("calc le")
-            # Y["le"] = binarize(le(normed_tfidf, config.emb_dim))
+            # if os.path.exists("../temp/sen_le.pkl"):
+            #     Y["le"] = pickle.load(open("../temp/sen_le.pkl", "rb"))
+            # else:
+            #     Y["le"] = binarize(le(normed_tfidf, 128))
+            #     pickle.dump(Y["le"], open("../temp/sen_le.pkl", "wb"))
+            #
+            # print("calc tsne")
+            # if os.path.exists("../temp/sen_tsne.pkl"):
+            #     Y["tsne"] = pickle.load(open("../temp/sen_tsne.pkl", "rb"))
+            # else:
+            #     Y["tsne"] = binarize(tsne(normed_tfidf, 128))
+            #     pickle.dump(Y["tsne"], open("../temp/sen_tsne.pkl", "wb"))
+
             pickle.dump(Y, open("../temp/features.pkl", "wb"))
 
         self.y = Y
@@ -133,9 +160,9 @@ if __name__ == "__main__":
     tf.app.flags.DEFINE_integer("embedding_dim", 300, "word embedding dimension")
     config = tf.app.flags.FLAGS
     generator = CharSenGenerator(config)
-    generator_next_batch = generator.next_batch(100)
-    while True:
-        x, y = next(generator_next_batch)
-        print(np.shape(x))
-        print(np.shape(y))
-        print(y)
+    # generator_next_batch = generator.next_batch(100)
+    # while True:
+    #     x, y = next(generator_next_batch)
+    #     print(np.shape(x))
+    #     print(np.shape(y))
+    #     print(y)

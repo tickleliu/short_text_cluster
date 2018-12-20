@@ -4,6 +4,9 @@
 @file: stc.py
 @time: 2018/11/30
 """
+import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import json
 
 import numpy as np
@@ -16,6 +19,7 @@ from trainers.stc_trainer import StcTrainer
 from utils.dirs import create_dirs
 from utils.logger import Logger
 from sklearn.preprocessing import normalize
+
 
 def main():
     # capture the config path from the run arguments
@@ -36,7 +40,7 @@ def main():
         tf.app.flags.DEFINE_integer("cpu_num", 1, "cpu num")
         tf.app.flags.DEFINE_string("summary_dir", "../temp", "summary dir")
         tf.app.flags.DEFINE_string("checkpoint_dir", "../temp", "check point dir")
-        tf.app.flags.DEFINE_integer("n_clusters", 100, "cluster nums")
+        tf.app.flags.DEFINE_integer("n_clusters", 200, "cluster nums")
         tf.app.flags.DEFINE_string("reduce_func", "ae", "reduce function")
         config = tf.app.flags.FLAGS
     except Exception as e:
@@ -48,7 +52,9 @@ def main():
     # create the experiments dirs
     create_dirs([config.summary_dir, config.checkpoint_dir])
     # create tensorflow session
-    sess = tf.Session()
+    sess_config = tf.ConfigProto()
+    sess_config.gpu_options.allow_growth = True
+    sess = tf.Session(config=sess_config)
     # create your data generator
     data = CharSenGenerator(config)
     # create an instance of the model you want

@@ -1,12 +1,15 @@
 import os
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+import pickle
 from gensim.models.keyedvectors import KeyedVectors
 from keras.callbacks import ModelCheckpoint
 from keras.optimizers import Adam
+from keras.layers.merge import concatenate
 from utils.utils import cluster_quality
+from utils.reduce_function import *
+
 EMBEDDING_FILE = 'data/GoogleNews-vectors-negative300.bin'
-
-
 
 text_path = 'data/StackOverflow.txt'
 label_path = 'data/StackOverflow_gnd.txt'
@@ -38,8 +41,11 @@ print("Max length: %d" % max(seq_lens))
 MAX_SEQUENCE_LENGTH = max(seq_lens)
 
 X = pad_sequences(sequences_full, maxlen=MAX_SEQUENCE_LENGTH)
+X_ori = X
+x_indices = np.arange(start=0, stop=X_ori.shape[0], step=1)
+X = X[x_indices[0:5000]]
+np.random.shuffle(x_indices)
 y = target
-
 
 ############################
 # Preparing embedding matrix
@@ -47,41 +53,58 @@ y = target
 
 
 print('Preparing embedding matrix')
-word2vec = KeyedVectors.load_word2vec_format(EMBEDDING_FILE, binary=True)
+# word2vec = KeyedVectors.load_word2vec_format(EMBEDDING_FILE, binary=True)
 
 EMBEDDING_DIM = 300
 nb_words = min(MAX_NB_WORDS, len(word_index)) + 1
-embedding_matrix = np.zeros((nb_words, EMBEDDING_DIM))
-for word, i in word_index.items():
-    if word in word2vec.vocab:
-        embedding_matrix[i] = word2vec.word_vec(word)
-    else:
-        print(word)
+# embedding_matrix = np.zeros((nb_words, EMBEDDING_DIM))
+# for word, i in word_index.items():
+#     if word in word2vec.vocab:
+#         embedding_matrix[i] = word2vec.word_vec(word)
+#     else:
+#         pass
+#
+# pickle.dump(embedding_matrix, open("embedding.pkl", "wb"))
+embedding_matrix = pickle.load(open("embedding.pkl", "rb"))
+# print(word)
 print('Null word embeddings: %d' % np.sum(np.sum(embedding_matrix, axis=1) == 0))
 
 #################################################
 # Preparing target using Average embeddings (AE)
 #################################################
+
 Y = {}
 tfidf = tokenizer.sequences_to_matrix(sequences_full, mode='tfidf')
+tfidf = tfidf[x_indices[0:5000]]
 denom = 1 + np.sum(tfidf, axis=1)[:, None]
-normed_tfidf = tfidf/denom
+normed_tfidf = tfidf / denom
 average_embeddings = np.dot(normed_tfidf, embedding_matrix)
 Y["ae"] = average_embeddings
+pickle.dump(Y["ae"], open("ae.pkl", "wb"))
+# Y["lle"] = lle(normed_tfidf, EMBEDDING_DIM)
+# pickle.dump(Y["lle"], open("lle.pkl", "wb"))
+Y["lle"] = pickle.load(open("lle.pkl", "rb"))
+
+# normed_tfidf = pca(normed_tfidf, 1000)
+Y["le"] = le(normed_tfidf, EMBEDDING_DIM)
+pickle.dump(Y["le"], open("le.pkl", "wb"))
+Y["le"] = pickle.load(open("le.pkl", "rb"))
 print("Shape of average embedding: ", Y['ae'].shape)
 
 # binary Y
 from utils.utils import binarize
+
 reduction_name = "ae"
+reduction_name = "lle"
+reduction_name = "le"
 B = binarize(Y[reduction_name])
 
-# Last dimension in the CNN
+# Last dimeaeon in the CNN
 TARGET_DIM = B.shape[1]
 
 # Example of binarized target vector
 print(B.shape)
 print(B[0])
-
 
 ################################################
 # train model
@@ -109,6 +132,10 @@ def get_model():
     embedded_sequences = pretrained_embedding_layer(sequence_input)
 
     # 1st Layer
+    # x1 = Conv1D(100, 3, activation='tanh', padding='same')(embedded_sequences)
+    # x2 = Conv1D(100, 4, activation='tanh', padding='same')(embedded_sequences)
+    # x3 = Conv1D(100, 5, activation='tanh', padding='same')(embedded_sequences)
+    # x = concatenate([x1, x2, x3])
     x = Conv1D(100, 5, activation='tanh', padding='same')(embedded_sequences)
     x = GlobalMaxPooling1D()(x)
 
@@ -117,7 +144,7 @@ def get_model():
     predictions = Dense(TARGET_DIM, activation='sigmoid')(x)
     model = Model(sequence_input, predictions)
 
-    model.layers[1].trainable=trainable_embedding
+    model.layers[1].trainable = trainable_embedding
 
     adam = Adam(lr=1e-3, beta_1=0.9, beta_2=0.999, epsilon=1e-08)
     # Loss and Optimizer
@@ -128,9 +155,11 @@ def get_model():
     model.summary()
     return model
 
+
 if __name__ == '__main__':
     nb_epoch = 20
-    checkpoint = ModelCheckpoint('models/weights.{epoch:03d}-{val_acc:.4f}.hdf5', monitor='val_acc', verbose=1, save_best_only=True, mode='auto')
+    checkpoint = ModelCheckpoint('models/weights.{epoch:03d}-{val_acc:.4f}.hdf5', monitor='val_acc', verbose=1,
+                                 save_best_only=True, mode='auto')
     model = get_model()
     model.fit(X, B, validation_split=0.2,
               epochs=nb_epoch, batch_size=100, verbose=1, shuffle=True)
@@ -141,10 +170,9 @@ if __name__ == '__main__':
     model_penultimate = Model(input, output)
 
     # inference of penultimate layer
-    H = model_penultimate.predict(X)
+    H = model_penultimate.predict(X_ori)
     # H = B
     print("Sample shape: {}".format(H.shape))
-
 
     from sklearn.preprocessing import normalize
     from sklearn.cluster import KMeans

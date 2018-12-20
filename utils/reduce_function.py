@@ -6,11 +6,12 @@
 """
 import numpy as np
 from sklearn import manifold
+from sklearn import decomposition
 from typing import List
 
-__all__ = ["ae", "tsne", "lle", "ltsa", "le", "mds", "isomap"]
+__all__ = ["ae", "tsne", "lle", "ltsa", "le", "mds", "isomap", "pca"]
 
-cpu_num = 4
+cpu_num = 2
 
 
 def ae(features, embedding_matrix):
@@ -19,51 +20,53 @@ def ae(features, embedding_matrix):
 
 
 def pca(features: List[List], dim):
-    pass
+    features = np.asarray(features, dtype=np.float32)
+    Y = decomposition.PCA(n_components=dim).fit_transform(features)
+    return Y
 
 
-def tsne(featrues: List[List], dim):
-    featrues = np.asarray(featrues, dtype=np.float32)
+def tsne(features: List[List], dim):
+    features = np.asarray(features, dtype=np.float32)
     Y = manifold.TSNE(n_components=dim, init="pca", random_state=0, method="exact", verbose=2).fit_transform(
-        featrues)
+        features)
     return Y
 
 
-def isomap(featrues: List[List], dim):
-    featrues = np.asarray(featrues, dtype=np.float32)
-    Y = manifold.Isomap(n_components=dim, n_neighbors=3, n_jobs=cpu_num).fit_transform(
-        featrues)
+def isomap(features: List[List], dim):
+    features = np.asarray(features, dtype=np.float32)
+    Y = manifold.Isomap(n_components=dim, n_neighbors=5, n_jobs=cpu_num).fit_transform(
+        features)
     return Y
 
 
-def lle(featrues: List[List], dim, method="standard"):
-    featrues = np.asarray(featrues, dtype=np.float32)
-    Y = manifold.LocallyLinearEmbedding(n_neighbors=3, n_components=dim, method=method,
+def lle(features: List[List], dim, method="standard"):
+    features = np.asarray(features, dtype=np.float32)
+    Y = manifold.LocallyLinearEmbedding(n_neighbors=5, n_components=dim, method=method,
                                         eigen_solver="auto", n_jobs=cpu_num).fit_transform(
-        featrues)
+        features)
     return Y
 
 
-def mds(featrues: List[List], dim):
-    featrues = np.asarray(featrues, dtype=np.float32)
+def mds(features: List[List], dim):
+    features = np.asarray(features, dtype=np.float32)
     Y = manifold.MDS(n_components=dim, max_iter=100, n_init=1, n_jobs=cpu_num).fit_transform(
-        featrues)
+        features)
     return Y
 
 
-def le(featrues: List[List], dim):
-    featrues = np.asarray(featrues, dtype=np.float32)
+def le(features: List[List], dim):
+    features = np.asarray(features, dtype=np.float32)
     Y = manifold.SpectralEmbedding(n_components=dim, n_jobs=cpu_num).fit_transform(
-        featrues)
+        features)
     return Y
 
 
-def ltsa(featrues: List[List], dim):
+def ltsa(features: List[List], dim):
     method = "ltsa"
-    featrues = np.asarray(featrues, dtype=np.float32)
+    features = np.asarray(features, dtype=np.float32)
     Y = manifold.LocallyLinearEmbedding(n_components=dim, method=method,
                                         eigen_solver="auto", n_jobs=cpu_num).fit_transform(
-        featrues)
+        features)
     return Y
 
 
