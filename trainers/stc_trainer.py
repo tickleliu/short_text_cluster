@@ -52,6 +52,6 @@ class StcTrainer(BaseTrain):
         x = pad_sequences(x, maxlen=self.config.max_seq_len)
 
         feed_dict = {self.model.x: x, self.model.is_training: False}
-        result = self.sess.run([self.model.pred],
+        result = self.sess.run([self.model.feature],
                                feed_dict=feed_dict)
         return result

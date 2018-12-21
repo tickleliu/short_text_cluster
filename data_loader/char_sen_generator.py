@@ -95,39 +95,46 @@ class CharSenGenerator(DataGenerator):
             Y["ae"] = binarize(average_embeddings)
 
             # normed_tfidf = pca(normed_tfidf, 800)
+            print("calc lsa")
+            if os.path.exists("../temp/sen_lsa.pkl"):
+                Y["lsa"] = pickle.load(open("../temp/sen_lsa.pkl", "rb"))
+            else:
+                Y["lsa"] = binarize(lsa(normed_tfidf, 70))
+                pickle.dump(Y["lsa"], open("../temp/sen_lsa.pkl", "wb"))
+
             # print("calc lle")
             # if os.path.exists("../temp/sen_lle.pkl"):
             #     Y["lle"] = pickle.load(open("../temp/sen_lle.pkl", "rb"))
             # else:
-            #     Y["lle"] = binarize(lle(normed_tfidf, 128))
+            #     Y["lle"] = binarize(lle(normed_tfidf, 70))
             #     pickle.dump(Y["lle"], open("../temp/sen_lle.pkl", "wb"))
-            #
+
             # print("calc isomap")
             # if os.path.exists("../temp/sen_isomap.pkl"):
             #     Y["isomap"] = pickle.load(open("../temp/sen_isomap.pkl", "rb"))
             # else:
-            #     Y["isomap"] = binarize(isomap(normed_tfidf, 128))
+            #     Y["isomap"] = binarize(isomap(normed_tfidf, 70))
             #     pickle.dump(Y["isomap"], open("../temp/sen_isomap.pkl", "wb"))
             #
             # print("calc mds")
             # if os.path.exists("../temp/sen_mds.pkl"):
             #     Y["mds"] = pickle.load(open("../temp/sen_mds.pkl", "rb"))
             # else:
-            #     Y["mds"] = binarize(mds(normed_tfidf, 128))
+            #     Y["mds"] = binarize(mds(normed_tfidf, 70))
             #     pickle.dump(Y["mds"], open("../temp/sen_mds.pkl", "wb"))
-            #
+
             # print("calc le")
             # if os.path.exists("../temp/sen_le.pkl"):
             #     Y["le"] = pickle.load(open("../temp/sen_le.pkl", "rb"))
             # else:
-            #     Y["le"] = binarize(le(normed_tfidf, 128))
+            #     Y["le"] = binarize(le(normed_tfidf, 70))
             #     pickle.dump(Y["le"], open("../temp/sen_le.pkl", "wb"))
             #
             # print("calc tsne")
             # if os.path.exists("../temp/sen_tsne.pkl"):
             #     Y["tsne"] = pickle.load(open("../temp/sen_tsne.pkl", "rb"))
             # else:
-            #     Y["tsne"] = binarize(tsne(normed_tfidf, 128))
+            #     Y["tsne"] = binarize(tsne(normed_tfidf, 64))
             #     pickle.dump(Y["tsne"], open("../temp/sen_tsne.pkl", "wb"))
 
             pickle.dump(Y, open("../temp/features.pkl", "wb"))

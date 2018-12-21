@@ -9,7 +9,7 @@ from sklearn import manifold
 from sklearn import decomposition
 from typing import List
 
-__all__ = ["ae", "tsne", "lle", "ltsa", "le", "mds", "isomap", "pca"]
+__all__ = ["ae", "tsne", "lle", "ltsa", "le", "mds", "isomap", "pca", "lsa"]
 
 cpu_num = 2
 
@@ -34,14 +34,14 @@ def tsne(features: List[List], dim):
 
 def isomap(features: List[List], dim):
     features = np.asarray(features, dtype=np.float32)
-    Y = manifold.Isomap(n_components=dim, n_neighbors=5, n_jobs=cpu_num).fit_transform(
+    Y = manifold.Isomap(n_components=dim, n_neighbors=15, n_jobs=cpu_num).fit_transform(
         features)
     return Y
 
 
 def lle(features: List[List], dim, method="standard"):
     features = np.asarray(features, dtype=np.float32)
-    Y = manifold.LocallyLinearEmbedding(n_neighbors=5, n_components=dim, method=method,
+    Y = manifold.LocallyLinearEmbedding(n_neighbors=15, n_components=dim, method=method,
                                         eigen_solver="auto", n_jobs=cpu_num).fit_transform(
         features)
     return Y
@@ -56,7 +56,7 @@ def mds(features: List[List], dim):
 
 def le(features: List[List], dim):
     features = np.asarray(features, dtype=np.float32)
-    Y = manifold.SpectralEmbedding(n_components=dim, n_jobs=cpu_num).fit_transform(
+    Y = manifold.SpectralEmbedding(n_components=dim, n_neighbors=15, n_jobs=cpu_num, affinity="rbf").fit_transform(
         features)
     return Y
 
@@ -66,6 +66,13 @@ def ltsa(features: List[List], dim):
     features = np.asarray(features, dtype=np.float32)
     Y = manifold.LocallyLinearEmbedding(n_components=dim, method=method,
                                         eigen_solver="auto", n_jobs=cpu_num).fit_transform(
+        features)
+    return Y
+
+
+def lsa(features: List[List], dim):
+    features = np.asarray(features, dtype=np.float32)
+    Y = decomposition.TruncatedSVD(n_components=dim).fit_transform(
         features)
     return Y
 

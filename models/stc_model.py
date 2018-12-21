@@ -7,10 +7,10 @@
 import os
 import pickle
 
-import numpy as np
 import tensorflow as tf
-from keras.layers import Conv1D, Dense, Dropout, GlobalMaxPool1D
+from keras.layers import Conv1D, Dense, Layer, Flatten, InputSpec, AveragePooling1D
 from keras.losses import binary_crossentropy
+# from keras import layers
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import normalize
 
@@ -44,14 +44,23 @@ class StcModel(BaseModel):
 
         with tf.name_scope("embedding_layer"):
             embeddings_var = tf.Variable(self.embedding_matrix, trainable=False, dtype=tf.float32)
-            x = tf.nn.embedding_lookup(embeddings_var, self.x)
+            xx = tf.nn.embedding_lookup(embeddings_var, self.x)
 
         with tf.name_scope("cnn_layer"):
-            x = Conv1D(100, 5, activation="tanh", padding="same")(x)
-            x = GlobalMaxPool1D()(x)
-            x = Dropout(0.5)(x)
+            x = Conv1D(100, 5, activation="tanh", padding="same")(xx)
+            x = KMaxPooling(5)(x)
+            # x._keras_shape = (None, 5, 100)  # fit some keras trick
+            # x = Dropout(0.5)(x)
+            x = Conv1D(100, 2, activation="tanh", padding="same")(x)
+            x = tf.transpose(x, (0, 2, 1))
+            x = AveragePooling1D(pool_size=2)(x)
+            x = tf.transpose(x, (0, 2, 1))
+            x = KMaxPooling(3)(x)
+            x = Flatten()(x)
+            # x = Dropout(0.5)(x)
 
         with tf.name_scope("dense_layer"):
+            self.feature = Dense(self.config.feature_dim, activation="sigmoid")(x)
             self.pred = Dense(self.config.target_dim, activation="sigmoid")(x)
 
         with tf.name_scope("loss"):
@@ -63,6 +72,32 @@ class StcModel(BaseModel):
 
     def init_saver(self):
         self.saver = tf.train.Saver(max_to_keep=self.config.max_to_keep)
+
+
+class KMaxPooling(Layer):
+    """
+    k-max-pooling
+    """
+
+    def __init__(self, k=1, **kwargs):
+        super().__init__(**kwargs)
+        self.input_spec = InputSpec(ndim=3)
+        self.k = k
+
+    def compute_output_shape(self, input_shape):
+        return (input_shape[0], self.k, input_shape[2])
+
+    def call(self, inputs):
+        # swap last two dimensions since top_k will be applied along the last dimension
+        shifted_input = tf.transpose(inputs, [0, 2, 1])
+
+        # extract top_k, returns two tensors [values, indices]
+        top_k = tf.nn.top_k(shifted_input, k=self.k, sorted=True, name=None)[0]
+        top_k = tf.transpose(top_k, [0, 2, 1])
+        return top_k
+
+        # return flattened output
+        # return Flatten()(top_k)
 
 
 class KMeanModel(object):

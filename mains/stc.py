@@ -31,6 +31,7 @@ def main():
         tf.app.flags.DEFINE_integer("voc_size", 2000, "embedding words vocabulary")
         tf.app.flags.DEFINE_integer("emb_dim", 300, "word embedding dimension")
         tf.app.flags.DEFINE_integer("target_dim", 300, "word embedding dimension")
+        tf.app.flags.DEFINE_integer("feature_dim", 480, "word embedding dimension")
         tf.app.flags.DEFINE_string("exp_name", "example", "exp name")
         tf.app.flags.DEFINE_integer("num_epochs", 10, "epochs")
         tf.app.flags.DEFINE_integer("num_iter_per_epoch", 200, "iter")

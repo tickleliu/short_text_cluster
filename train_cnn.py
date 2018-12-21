@@ -43,7 +43,7 @@ MAX_SEQUENCE_LENGTH = max(seq_lens)
 X = pad_sequences(sequences_full, maxlen=MAX_SEQUENCE_LENGTH)
 X_ori = X
 x_indices = np.arange(start=0, stop=X_ori.shape[0], step=1)
-X = X[x_indices[0:5000]]
+# X = X[x_indices[0:2000]]
 np.random.shuffle(x_indices)
 y = target
 
@@ -55,7 +55,7 @@ y = target
 print('Preparing embedding matrix')
 # word2vec = KeyedVectors.load_word2vec_format(EMBEDDING_FILE, binary=True)
 
-EMBEDDING_DIM = 300
+EMBEDDING_DIM = 70
 nb_words = min(MAX_NB_WORDS, len(word_index)) + 1
 # embedding_matrix = np.zeros((nb_words, EMBEDDING_DIM))
 # for word, i in word_index.items():
@@ -75,28 +75,50 @@ print('Null word embeddings: %d' % np.sum(np.sum(embedding_matrix, axis=1) == 0)
 
 Y = {}
 tfidf = tokenizer.sequences_to_matrix(sequences_full, mode='tfidf')
-tfidf = tfidf[x_indices[0:5000]]
+# tfidf = tfidf[x_indices[0:2000]]
 denom = 1 + np.sum(tfidf, axis=1)[:, None]
 normed_tfidf = tfidf / denom
 average_embeddings = np.dot(normed_tfidf, embedding_matrix)
 Y["ae"] = average_embeddings
-pickle.dump(Y["ae"], open("ae.pkl", "wb"))
+
+# Y["lsa"] = lsa(normed_tfidf, EMBEDDING_DIM)
+# pickle.dump(Y["lsa"], open("lsa.pkl", "wb"))
+# Y["lsa"] = pickle.load(open("lsa.pkl", "rb"))
+
+# pickle.dump(Y["ae"], open("ae.pkl", "wb"))
 # Y["lle"] = lle(normed_tfidf, EMBEDDING_DIM)
 # pickle.dump(Y["lle"], open("lle.pkl", "wb"))
-Y["lle"] = pickle.load(open("lle.pkl", "rb"))
+# Y["lle"] = pickle.load(open("lle.pkl", "rb"))
 
 # normed_tfidf = pca(normed_tfidf, 1000)
-Y["le"] = le(normed_tfidf, EMBEDDING_DIM)
-pickle.dump(Y["le"], open("le.pkl", "wb"))
-Y["le"] = pickle.load(open("le.pkl", "rb"))
+# Y["le"] = le(normed_tfidf, EMBEDDING_DIM)
+# pickle.dump(Y["le"], open("le.pkl", "wb"))
+# Y["le"] = pickle.load(open("le.pkl", "rb"))
+
+# Y["mds"] = mds(normed_tfidf, EMBEDDING_DIM)
+# pickle.dump(Y["mds"], open("mds.pkl", "wb"))
+# Y["mds"] = pickle.load(open("mds.pkl", "rb"))
+
+# Y["tsne"] = tsne(normed_tfidf, EMBEDDING_DIM)
+# pickle.dump(Y["tsne"], open("tsne.pkl", "wb"))
+# Y["tsne"] = pickle.load(open("tsne.pkl", "rb"))
+
+# Y["isomap"] = isomap(normed_tfidf, EMBEDDING_DIM)
+# pickle.dump(Y["isomap"], open("isomap.pkl", "wb"))
+# Y["isomap"] = pickle.load(open("isomap.pkl", "rb"))
+
 print("Shape of average embedding: ", Y['ae'].shape)
 
 # binary Y
 from utils.utils import binarize
 
 reduction_name = "ae"
-reduction_name = "lle"
-reduction_name = "le"
+# reduction_name = "lsa"
+# reduction_name = "lle"
+# reduction_name = "le"
+# reduction_name = "mds"
+# reduction_name = "tsne"
+# reduction_name = "isomap"
 B = binarize(Y[reduction_name])
 
 # Last dimeaeon in the CNN
@@ -112,17 +134,17 @@ print(B[0])
 
 from keras.layers import Input, Embedding, Flatten, Reshape
 from keras.layers import Dense, Conv1D, Dropout, merge
-from keras.layers import MaxPooling1D, GlobalMaxPooling1D, ZeroPadding1D
+from keras.layers import MaxPooling1D, GlobalMaxPooling1D
 from keras.models import Model
 
 
 def get_model():
     embedding_matrix_copy = embedding_matrix.copy()
     trainable_embedding = False
-    # Embedding layer
+    # Embedding ler
     pretrained_embedding_layer = Embedding(
         input_dim=nb_words,
-        output_dim=EMBEDDING_DIM,
+        output_dim=300,
         weights=[embedding_matrix],
         input_length=MAX_SEQUENCE_LENGTH,
     )
@@ -137,11 +159,16 @@ def get_model():
     # x3 = Conv1D(100, 5, activation='tanh', padding='same')(embedded_sequences)
     # x = concatenate([x1, x2, x3])
     x = Conv1D(100, 5, activation='tanh', padding='same')(embedded_sequences)
-    x = GlobalMaxPooling1D()(x)
-
+    x = Dropout(0.5)(x)
+    x = Conv1D(100, 5, activation='tanh', padding='same')(x)
     # Output
     x = Dropout(0.5)(x)
-    predictions = Dense(TARGET_DIM, activation='sigmoid')(x)
+    x = GlobalMaxPooling1D()(x)
+    deepfeatures = Dense(480, activation="sigmoid")(x)
+
+    # Output
+    # x = Dropout(0.5)(x)
+    predictions = Dense(TARGET_DIM, activation='sigmoid')(deepfeatures)
     model = Model(sequence_input, predictions)
 
     model.layers[1].trainable = trainable_embedding
@@ -157,12 +184,12 @@ def get_model():
 
 
 if __name__ == '__main__':
-    nb_epoch = 20
+    nb_epoch = 500
     checkpoint = ModelCheckpoint('models/weights.{epoch:03d}-{val_acc:.4f}.hdf5', monitor='val_acc', verbose=1,
                                  save_best_only=True, mode='auto')
     model = get_model()
     model.fit(X, B, validation_split=0.2,
-              epochs=nb_epoch, batch_size=100, verbose=1, shuffle=True)
+              epochs=nb_epoch, batch_size=200, verbose=1, shuffle=True)
 
     # create model that gives penultimate layer
     input = model.layers[0].input
