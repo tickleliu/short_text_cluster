@@ -6,3 +6,7 @@
 *.pkl
 /.idea
 /temp
+temp*
+*.plk
+*.npy
+checkpoint

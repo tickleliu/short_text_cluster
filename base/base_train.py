@@ -9,8 +9,8 @@ class BaseTrain:
         self.config = config
         self.sess = sess
         self.data = data
-        self.options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
-        self.run_metadata = tf.RunMetadata()
+        # self.options = tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+        # self.run_metadata = tf.RunMetadata()
         self.init = tf.group(tf.global_variables_initializer(), tf.local_variables_initializer())
         self.sess.run(self.init)
 
@@ -18,10 +18,10 @@ class BaseTrain:
         for cur_epoch in range(self.model.cur_epoch_tensor.eval(self.sess), self.config.num_epochs + 1, 1):
             self.train_epoch()
             self.sess.run(self.model.increment_cur_epoch_tensor)
-        fetched_timeline = timeline.Timeline(self.run_metadata.step_stats)
-        chrome_trace = fetched_timeline.generate_chrome_trace_format()
-        with open('timeline.json', 'w') as f:
-            f.write(chrome_trace)
+        # fetched_timeline = timeline.Timeline(self.run_metadata.step_stats)
+        # chrome_trace = fetched_timeline.generate_chrome_trace_format()
+        # with open('timeline.json', 'w') as f:
+        #     f.write(chrome_trace)
 
     def train_epoch(self):
         """

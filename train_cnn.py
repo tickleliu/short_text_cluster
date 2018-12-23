@@ -65,7 +65,7 @@ nb_words = min(MAX_NB_WORDS, len(word_index)) + 1
 #         pass
 #
 # pickle.dump(embedding_matrix, open("embedding.pkl", "wb"))
-embedding_matrix = pickle.load(open("embedding.pkl", "rb"))
+embedding_matrix = pickle.load(open("temp/embedding.pkl", "rb"))
 # print(word)
 print('Null word embeddings: %d' % np.sum(np.sum(embedding_matrix, axis=1) == 0))
 
@@ -184,7 +184,7 @@ def get_model():
 
 
 if __name__ == '__main__':
-    nb_epoch = 500
+    nb_epoch = 1
     checkpoint = ModelCheckpoint('models/weights.{epoch:03d}-{val_acc:.4f}.hdf5', monitor='val_acc', verbose=1,
                                  save_best_only=True, mode='auto')
     model = get_model()
