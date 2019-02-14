@@ -56,7 +56,7 @@ class Stc2Trainer(BaseTrain):
         #     else:
         #         x.append(0)
         # x = np.asarray(x)
-        x = np.expand_dims(x, 0)
+        # x = np.expand_dims(x, 0)
         # x = pad_sequences(x, maxlen=self.config.max_seq_len)
 
         feed_dict = {self.model.x: x, self.model.is_training: False}

@@ -27,14 +27,14 @@ class Stc2Model(BaseModel):
         self.init_saver()
 
     def build_model(self):
-        if os.path.exists("../temp/embedding.pkl"):
-            self.embedding_matrix = pickle.load(open("../temp/embedding.pkl", "rb"))
+        if os.path.exists("../temp/sen_embedding.pkl"):
+            self.embedding_matrix = pickle.load(open("../temp/sen_embedding.pkl", "rb"))
         else:
             print("no embedding matrix")
             exit(-1)
 
-        if os.path.exists("../temp/wi.pkl"):
-            self.word_index = pickle.load(open("../temp/wi.pkl", "rb"))
+        if os.path.exists("../temp/sen_wi.pkl"):
+            self.word_index = pickle.load(open("../temp/sen_wi.pkl", "rb"))
         else:
             print("no word index dict")
             exit(-1)
@@ -95,6 +95,7 @@ class Stc2Model(BaseModel):
             loss_mds = self.binary_crossentropy(self.pred_mds, self.y_mds)
             loss_lsa = self.binary_crossentropy(self.pred_lsa, self.y_lsa)
             self.loss = (loss_ae + loss_le + loss_lle + loss_isomap + loss_mds + loss_lsa) / 6
+            # self.loss = loss_ae
 
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
             with tf.control_dependencies(update_ops):

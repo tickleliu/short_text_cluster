@@ -6,7 +6,7 @@
 """
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import json
 
 import numpy as np
@@ -45,6 +45,7 @@ def main():
         tf.app.flags.DEFINE_float("learning_rate", 0.001, "lr")
         tf.app.flags.DEFINE_integer("batch_size", 200, "batch size")
         tf.app.flags.DEFINE_integer("max_to_keep", 5, "model to keep")
+        tf.app.flags.DEFINE_integer("max_seq_len", -1, "max seq len")
         tf.app.flags.DEFINE_integer("cpu_num", 1, "cpu num")
         tf.app.flags.DEFINE_string("summary_dir", "../temp", "summary dir")
         tf.app.flags.DEFINE_string("checkpoint_dir", "../temp", "check point dir")
